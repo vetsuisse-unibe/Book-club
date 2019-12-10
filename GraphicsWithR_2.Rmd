@@ -1,0 +1,608 @@
+---
+title: "Graphics with base plot"
+output:
+  slidy_presentation:
+    highlight: tango
+    theme: cerulean
+  beamer_presentation:
+    highlight: tango
+graphics: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter 3: Plotting
+
+# Chapter overview
+
+* Learn how to rapidly and flexibly explore datasets by visualization.
+
+* Create beautiful and intuitive plots for scientific presentations and publications.
+
+* **Review the basics of base R plotting.**
+
+* *Understand the logic behind the grammar of graphics concept.*
+
+* *Introduce ggplot2’s ggplot function.*
+
+* See how to plot data in one, two, or even three to five dimensions, and explore faceting.
+
+* Create “along-genome” plots for molecular biology data (or along other sequences, e.g., peptides).
+
+* Discuss some of our options of interactive graphics.
+
+
+# Plotting in R
+
+* Base plotting  
+    + No additional packages needed  
+    + High costumizability  
+    + Nice plots require more effort  
+* ggplot  
+    + "Easier to use"  
+    + Requires the package ggplot2  
+    + Often difficult to custumize precisely  
+* lattice  
+    + Intended for multivariate relationships  
+    + Slightly nicer than base plotting  
+    + Low custimizability  
+
+# Base plotting in R
+
+1. Set parameters with par(): size, multiple panels, change default parameters  
+2. Higher level plot commands: create the plot (canvas)  
+    + Depending on the command and the supplied data  the plot will come with default visuals  
+3. Lower level plot commands: add elements to the plot  
+    + The parameter add=TRUE can also turn a higher level function to add elements (superimpose)  
+    + Used in precision plotting  
+
+# The plotting region (canvas)
+
+* Automatically determined by higher level plot commands  
+* Change with par(mar=c(bottom, left, top, right), oma=c(bottom, left, top, right))  
+    + mar: inner margins  
+    + oma: outer margins  
+
+<div align="center">
+<img src="img/Rmargin.png" width="40%"
+   alt="RMargin" />
+<img src="img/Rmargin2.png" width="40%"
+   alt="RMargin" />
+</div>
+
+# Let's plot some data
+
+```{r}
+df<-data.frame(y<-rgamma(5000,0.8))
+```
+
+Plot by index (in the sequence they appear in the data frame)
+
+```{r}
+plot(df$y)
+```
+
+
+# Basic scatterplots
+
+Plot a continuous variable X against another continuous variable Y
+
+```{r}
+df$x <- rpois(5000,0.2)
+```
+
+```{r}
+plot(df$y~df$x)
+```
+
+Jitter values randomly (add noise). amount= [value] alters the strength of the jittering. 
+
+```{r}
+plot(df$y~jitter(df$x))
+```
+
+# Basic boxplot
+
+Displays information on median, quantiles, range and outliers for continuous variables, by factor level.
+
+* Thick line in middle: Median
+* Box: interquartile-range (50% of values lie within this box)
+* Whiskers: 1.5 times interquartile range (default)
+* Points: anyting else
+
+```{r}
+boxplot(df$y~df$x)
+```
+
+Options:
+* range= [value] how many times do the whiskers extend (default 1.5)
+* width= [vector value] width of the boxes
+* varwidth= [TRUE/FALSE] box width reflects number of data points
+
+```{r}
+boxplot(df$y~df$x, varwidth=TRUE)
+```
+
+# Basic histogram
+
+Plot amount of observertaions per range-group of continuous values.
+
+```{r}
+hist(df$y)
+```
+
+Options:
+* breaks= [Value] how many categories to draw (default "Sturges")
+
+```{r}
+hist(df$y,breaks=4)
+```
+
+# Add elements
+
+# Straight lines at fixed points
+
+Add a horizontal line at h= [value vector]
+
+```{r}
+plot(df$y)
+abline(h=mean(df$y),col="red",lwd=4)
+```
+
+Plot a vertical line at v= [value vector]
+
+```{r}
+plot(df$y)
+abline(v=seq(1000,4000,1000),col="red",lwd=4)
+```
+
+# Regression lines
+
+Linear regression = a + b*x  
+Specify intercept (a) and slope (b) for manual regression line.
+
+```{r}
+plot(df$y~jitter(df$x))
+abline(a=3,b=(-0.6),col="red",lwd=4, lty=2)
+```
+
+Alternatively provide a linear model fit to extract parameters from.
+
+```{r}
+plot(df$y~jitter(df$x))
+model <- lm(df$y~df$x)
+abline(model,col="red",lwd=4,lty=2)
+```
+
+# Points
+
+Add points to a plot.  
+Specify x and y coordinates for each point as an x-vector and a y-vector.  
+
+```{r}
+ys <- tapply(df$y,as.factor(df$x),max)
+xs <- 1:4
+boxplot(df$y~df$x)
+points(xs,ys,col="red",pch=16,cex=2)
+```
+
+Options:
+* type= [selection] "p" for points, "l" for lines, "b" for both
+
+```{r}
+ys <- tapply(df$y,as.factor(df$x),max)
+xs <- 1:4
+boxplot(df$y~df$x)
+points(xs,ys,col="red",pch=16,cex=2,type="b")
+```
+
+Lines can also be drawn with the lines command.  
+
+```{r}
+ys <- tapply(df$y,as.factor(df$x),max)
+xs <- 1:4
+boxplot(df$y~df$x)
+lines(xs,ys,col="red",pch=16,lwd=2)
+```
+
+# Playing with color
+
+Let's try something more complex: what if we want to highlight groups of 1'000 Points?  
+We did this with lines before:  
+
+```{r}
+plot(df$y)
+abline(v=seq(1000,4000,1000),col="red",lwd=4)
+```
+
+We can do this by providing a vector containing the color for each point to the col= argument.  
+
+```{r}
+plot(df$y,pch=16,col=rep(c("red","blue","pink","green","orange"),each=1000))
+```
+
+And what about highlighting all values above the mean?  
+
+```{r}
+plot(df$y)
+abline(h=mean(df$y),col="red",lwd=4)
+```
+
+We also could do this directly with the col= argument, but let's try to use the points command to add the respective points separately.
+
+# Empty plots
+
+Let's start with an empty plot.  
+We already know the x limits of the plot, so we can specify them ourselves.  
+The y-limits we have to extract from the data.  
+(Limits always have to be provided, either through data or manually)  
+
+```{r}
+plot(NA,xlim=c(0,5000),ylim=range(df$y))
+```
+
+Next we define the cutoff and use the points command to add the specific points.  
+Because creating a subset according to the cutoff creates a new vector with new indizes, we have to provide the original indizes as x-values.  
+
+```{r}
+cut <- mean(df$y)
+plot(NA,xlim=c(0,5000),ylim=range(df$y))
+points(x=which(df$y<cut),y=df$y[which(df$y<cut)],pch=16,col="black")
+points(x=which(df$y>=cut),y=df$y[which(df$y>=cut)],pch=16,col="red")
+```
+
+If we don't know the limits, we can also pass the data and tell the plot command not to plot it (type="n")  
+
+```{r}
+plot(df$y,type="n")
+```
+
+# Labels
+
+To change the names we can specify labels and titles manually.
+
+```{r}
+boxplot(df$y~df$x,xlab="Poisson",ylab="Gamma",main="A boxplot")
+```
+
+To add a legend we need the x and y coordinates of the top-left corner of the legend.  
+
+```{r}
+ys <- tapply(df$y,as.factor(df$x),max)
+xs <- 1:4
+boxplot(df$y~df$x,xlab="Poisson",ylab="Gamma",main="A boxplot")
+legend(x=3.5,y=7,legend=c("red","blue","orange","pink"),col=c("red","blue","orange","pink"),pch=18)
+```
+
+Or we specify a place relative to the border (topright, top, bottom, bottomleft, etc.)  
+
+```{r}
+ys <- tapply(df$y,as.factor(df$x),max)
+xs <- 1:4
+boxplot(df$y~df$x,xlab="Poisson",ylab="Gamma",main="A boxplot")
+legend("topright",legend=c("red","blue","orange","pink"),col=c("red","blue","orange","pink"),pch=18)
+```
+
+# Axes
+
+* Adding axes manually is useful as the look is more controllable  
+* axis(side,at,labels)  
+    + side: which side of the plot (side: 1=bottom, 2=left, 3=top, 4=right)  
+    + at: vector providing the coordinates for the labels/ticks  
+    + labels: vector providing the labels for each tick  
+    + Control the oriantation of labels with las=  
+
+```{r}
+plot(NULL, xlim=range(df$x), ylim=range(df$y), ylab="", xlab="", axes=FALSE)
+axis(side=1,at=seq(-1,4,1),labels=c("","Zero","One","Two","Three",""))
+axis(side=2,at=seq(0,8,0.5),labels=seq(0,8,0.5))
+axis(side=3,at=c(-1,5))
+axis(side=4,at=c(-1,8))
+```
+
+* Hint: round the range of the plot region for nicer graphs  
+* Hint: extend the axis beyond the range of your plot to get a box  
+
+# Multiple plots
+
+To specify multiple panels, use the mfrow (or mfcol) argument of the par command.  
+For mfrow specify a vector with two elements c(nrows, ncols).
+Each subsequent higher-level plot command is then plotted in the next available panel  
+(mfrow: rows are filled first, mfcol: columns are filled first)
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(df$y~df$x,xlab="Poisson",ylab="Gamma",main="A boxplot")
+plot(df$y,main="A pointplot",xlab="Index",ylab="Gamma")
+abline(h=mean(df$y),col="red",lwd=4)
+```
+
+What if we want the plots perfectly side-by-side?  
+With the mar argument we can set the margins at each side for the plots.  
+However, the parameters are set globally for all subsequent plots.  
+
+```{r}
+par(mfrow=c(1,2),mar=c(4,5,3,0))
+boxplot(df$y~df$x,xlab="Poisson",ylab="Gamma",main="A boxplot")
+plot(df$y,main="A pointplot",xlab="Index",ylab="",yaxt="n")
+abline(h=mean(df$y),col="red",lwd=4)
+```
+
+So, to get what we want, we need to specify the margins for each plot separately.  
+One of the harder things to do is, to get both plots to be the same size. This is because the margins are part of the plot and the plot always tries to fill the entire space available.  
+The layout command can help, but is a bit more complex than par(mfrow).
+
+```{r}
+par(mfrow=c(1,2),mar=c(4,5,3,0))
+boxplot(df$y~df$x,xlab="Poisson",ylab="Gamma",main="A boxplot")
+par(mar=c(4,0,3,1))
+plot(df$y,main="A pointplot",xlab="Index",ylab="",yaxt="n")
+abline(h=mean(df$y),col="red",lwd=4)
+```
+
+We can also set the plots on top of eachother.  
+In addition, the oma argument can be used to extend the outer margin in order to give the entire plot a title.  
+
+```{r}
+par(mfrow=c(2,1),mar=c(0,5,3,0),oma=c(2,0,2,0))
+boxplot(df$y~df$x,xlab="",ylab="Gamma",main="A boxplot",xaxt="n")
+par(mar=c(4,5,0,0))
+plot(df$y,main="",xlab="Index",ylab="Gamma")
+abline(h=mean(df$y),col="red",lwd=4)
+mtext(text="Two plots",side=3,line=0,outer=TRUE,cex=2,font=3)
+```
+
+* Hint: often it's easier to export each graph separately and combine them in a separate program (e.g. Inkscape)
+* (Just make sure to maintain the relations within the graph)
+
+# General options
+
+* axes = FALSE: disable the plotting of any axes  
+* xaxt = "n" / yaxt = "n": disable the tick-marks and labels of each axis  
+* bty = "n": disable the box around the plot (also possible "o", "l", "7", "c", "u", "]")  
+* adj = 0: justification of all text (0=left, 0.5=centered, 1=right)  
+* pty = "s" / pty = "m": m is default, s ensures a square plotting region  
+* font = 1: set the font for the plot (1=normal, 2=bold, 3=italics, 4=bold italics)  
+* family = "sans": set the font family ("serif", "sans", "mono", "symbol")  
+
+# Adding elements to existing plots
+
+* Points  
+    + points(x,y,...): add points to a plot (x=all x-coordinates, y=all y-coordinates)  
+* Lines  
+    + lines(x,y,...): add lines to a plot connecting each x-y coordinate in sequence  
+    + abline(a,b): add a straight line with slope b and intercept a  
+    + abline(h=y) / abline(v=x): add a straight horizontal/vertical line at y/x  
+    + segments(x0,y0, x1,y1): adds a line from points x0,y0 to x1,y1  
+    + arrows(x0,y0, x1,y1): adds an arrow from points x0,y0 to x1,y1  
+* Text  
+    + text(x,y,labels): adds the strings provided to labels to the respective x-y coordinates  
+    + mtext(text,side,line,outer=FALSE): add text into the margins of the plot (side: 1=bottom, 2=left, 3=top, 4=right; line determines the elevation above the axis)  
+    + title(main,sub): add titles and subtitles  
+* Legends  
+    + legend(x,y,legend=c(),lty,pch,lwd): add a legend (top-left corner) at the coordinates x-y (delete the box with bty="n")  
+* Forms  
+    + rect(x1,y1,x2,y2): draw a rectangle between x1,y1 (bottom-left corner) and x2,y2 (top-right corner)  
+    + polygon(x,y): draw a polygon, connecting the coordinates provided by x and y in sequence 
+
+
+# GGplot plotting
+
+Prepare some data
+```{r}
+datax <- data.frame(y=rep(1:3,7)+rep(c(seq(0,10,2)),c(3,4,4,3,2,5)),x=rep(1:6,c(3,4,4,3,2,5)),
+                    sampleGroup=rep(c("A","B","C","D","E","F"),c(3,4,4,3,2,5)),
+                    sampleColor=rep(c("red","blue","green","firebrick","seagreen","forestgreen"),c(3,4,4,3,2,5)))
+```
+
+Describe the data
+```{r}
+library("dplyr")
+groups = group_by(datax, sampleGroup) %>%
+  summarise(n = n(), color = unique(sampleColor))
+groups
+```
+
+# The pipe operator
+
+Calculate row-means of x, then square each mean, then calculate sum of the squares
+
+Variant A (The careful approach)
+```{r}
+x <- matrix(1:12,nrow=3)
+rmen <- rowMeans(x)
+sqrs <- sqrt(rmen)
+susq <- sum(sqrs)
+susq
+```
+
+Variant B (The nested approach)
+```{r}
+susq <- sum(sqrt(rowMeans(x)))
+susq
+```
+
+Variant C (The pipe)
+```{r}
+susq <- rowMeans(x) %>%
+  sqrt() %>%
+  sum()
+susq
+```
+
+# ggplot2
+
+Redo the earlier plot using ggplot2
+
+```{r}
+library("ggplot2")
+ggplot(DNase) + aes(x = conc, y = density) + geom_point()
+```
+
+* "gg" stands for "grammar of graphics"
+* The idea is to have a universal grammar to structure the creation of plots
+
+* ggplot(DNase): set up the drawing space
+* aes(): [aestethics] what makes the picture?
+* geom_point: what do we draw? [points = scatterplot]
+
+Try a different plot
+
+```{r}
+ggplot(groups) + aes(x = sampleGroup, y = n) +
+  geom_bar(stat = "identity")
+```
+
+* geom_bar: [barplot]
+* stat="identity": use the identity of the objects on the x-axis (i.e. groups)
+
+Flip coordinates
+
+```{r}
+ggplot(groups) + aes(x = sampleGroup, y = n) +
+  geom_bar(stat = "identity") + coord_flip()
+```
+
+```{r}
+groups
+```
+
+
+```{r}
+groupColor = as.vector(setNames(groups$color, groups$sampleGroup))
+ggplot(groups) + aes(x = sampleGroup, y = n, fill = sampleGroup) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = groupColor, name = "Groups") +
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5,hjust = 1))
+```
+
+# Data flow
+
+ggplot always requires a dataframe with the necessary information (data)
+
+ggplots can be assigned to an object for later manipulation and plotting.
+
+```{r}
+gg <- ggplot(datax) + aes(x = x, y = y) + geom_point()
+gg <- ggplot(datax)
+gg <- gg + aes(x = x, y = y)
+gg <- gg + geom_point()
+print(gg)
+```
+
+ggplots can be exported
+
+```{r}
+ggsave("DNAse-histogram-demo.pdf", plot = gg)
+```
+
+* Personal tip: save plots in svg (vector graphics) and modify the details in Inkscape
+
+# 3.5 The grammar of graphics
+
+The components of ggplot2’s grammar of graphics are
+
+* one or more datasets,
+
+* one or more geometric objects that serve as the visual representations of the data, – for instance, points, lines, rectangles, contours,
+
+* descriptions of how the variables in the data are mapped to visual properties (aesthetics) of the geometric objects, and an associated scale (e. g., linear, logarithmic, rank),
+
+* one or more coordinate systems,
+
+* statistical summarization rules,
+
+* a facet specification, i.e. the use of multiple similar subplots to look at subsets of the same data,
+
+* optional parameters that affect the layout and rendering, such text size, font and alignment, legend positions.
+
+# Other themes
+
+```{r}
+ggplot(DNase) + aes(x = conc, y = density) + geom_point() + theme_classic()
+```
+
+```{r}
+ggplot(DNase) + aes(x = conc, y = density) + geom_point(colour="white") + theme_dark()
+```
+
+# Layers
+
+* Components can be reused
+
+```{r}
+#dftx = data.frame(t(Biobase::exprs(x)), pData(x))
+#write.table(cbind(dftx$X1426642_at,dftx$X1418765_at,dftx$sampleColour),file="dftx.txt")
+dftx <- read.table("dftx.txt")
+names(dftx) <- c("X1426642_at","X1418765_at","sampleColour")
+ggplot(dftx) + aes(x = X1426642_at, y = X1418765_at) +
+  geom_point( shape = 1 ) +
+  geom_smooth( method = "loess" )
+
+```
+
+# Add color
+
+```{r}
+ggplot( dftx) + aes( x = X1426642_at, y = X1418765_at )  +
+  geom_point( aes( color = sampleColour), shape = 19 ) +
+  geom_smooth( method = "loess" ) +
+  scale_color_discrete( guide = FALSE )
+```
+
+* Book Question:
+What happens if we set the color aesthetics for all layers?
+
+```{r}
+ggplot( dftx) + aes( x = X1426642_at, y = X1418765_at, color=sampleColour )  +
+  geom_point( shape = 19 ) +
+  geom_smooth( method = "loess" ) +
+  scale_color_discrete( guide = FALSE )
+```
+
+* Book Question:
+What happens when we omit the call to scale_color_discrete?
+
+```{r}
+ggplot( dftx) + aes( x = X1426642_at, y = X1418765_at )  +
+  geom_point( aes( color = sampleColour), shape = 19 ) +
+  geom_smooth( method = "loess" )
+```
+
+* Book Question:
+Is it always meaningful to visualize scatterplot data together with a regression line as in Figures 3.9 and 3.10?
+
+No.
+
+# Plot buildup
+
+* Plots can be stored as objects
+
+```{r}
+pb = ggplot(groups, aes(x = sampleGroup, y = n))
+```
+
+* And then modified
+
+```{r}
+pb = pb + geom_bar(stat = "identity")
+pb = pb + aes(fill = sampleGroup)
+pb = pb + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+pb = pb + scale_fill_manual(values = groupColor, name = "Groups")
+pb
+```
+
+* And further modified
+
+```{r}
+pb.polar = pb + coord_polar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank()) +
+  xlab("") + ylab("")
+pb.polar
+```
+
+
